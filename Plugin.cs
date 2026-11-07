@@ -633,13 +633,20 @@ public unsafe class Plugin : IDalamudPlugin {
         return modelScale;
     }
 
+    private static float CustomScaleOrOne(DrawObject* drawObject) {
+        if (drawObject == null) return 1f;
+        var customScale = drawObject->Object.Scale.Z;
+        if (!float.IsFinite(customScale) || customScale <= 0.0001f) return 1f;
+        return customScale;
+    }
+
     private static Vector3 ScaleOffsetWithCharacter(GameObject* obj, IOffsetProvider offsetProvider, Vector3 appliedOffset) {
         if (!Config.ScaleOffsetsWithCharacter) return appliedOffset;
-        // Model attributes are scaled in CheckModelSlot. Temp offsets are absolute world edits.
-        if (offsetProvider is TempOffset or ModelOffsetProvider) return appliedOffset;
+        // Temp offsets are absolute world edits. Model attributes stay raw until this multiply so sync does not send a scaled value.
+        if (offsetProvider is TempOffset) return appliedOffset;
         if (obj->DrawObject == null) return appliedOffset;
 
-        return appliedOffset * RacialModelScaleOrOne(obj->DrawObject);
+        return appliedOffset * RacialModelScaleOrOne(obj->DrawObject) * CustomScaleOrOne(obj->DrawObject);
     }
 
     private bool ObjectIsCompanionTurnedHuman(GameObject* gameObject) {
@@ -1285,8 +1292,9 @@ public unsafe class Plugin : IDalamudPlugin {
     }
 
     private static float ModelAttributeScale(Human* human) {
-        if (!Config.ScaleOffsetsWithCharacter) return human->CharacterBase.DrawObject.Object.Scale.Y;
-        return RacialModelScaleOrOne((DrawObject*)human);
+        // While character scaling is on, CheckModelSlot returns the authored attribute. ScaleOffsetWithCharacter applies ModelScale and custom scale locally.
+        if (Config.ScaleOffsetsWithCharacter) return 1f;
+        return human->CharacterBase.DrawObject.Object.Scale.Y;
     }
 
     private static float? GetOffsetFromModels(Human* human) {

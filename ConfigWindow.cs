@@ -704,7 +704,7 @@ public class ConfigWindow : Window {
                 }
 
                 ImGui.SameLine();
-                ImGuiComponents.HelpMarker("Multiplies configured heel, emote, and model offsets by the character's racial model height (ModelScale).\nThis follows Penumbra racial scaling and Special Snowflakes height.\nTemporary offsets are left unchanged.");
+                ImGuiComponents.HelpMarker("Multiplies configured heel, emote, and model offsets by the character's racial model height and custom draw scale.\nRacial height follows Penumbra racial scaling and Special Snowflakes height. Custom scale follows the draw object's Scale.Z, which Special Snowflakes reports as current custom scale.\nOther players receive the saved offset, not the scaled result. Their client applies the scales on the character they are drawing.\nTemporary offsets are left unchanged.");
                 
                 if (config.UseModelOffsets) {
                     ImGui.SameLine();
