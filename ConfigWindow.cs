@@ -695,6 +695,19 @@ public class ConfigWindow : Window {
 
                 ImGui.SameLine();
                 ImGuiComponents.HelpMarker("Allows mod developers to assign an offset to a modded item.\nClick this for more information.");
+
+                if (ImGui.Checkbox("Scale offsets with racial height", ref config.ScaleOffsetsWithCharacter)) {
+                    Plugin.RequestUpdateAll();
+                }
+
+                ImGui.SameLine();
+                ImGuiComponents.HelpMarker("Multiplies configured heel, emote, and model offsets by the character's racial model height (ModelScale).\nThis follows Penumbra racial scaling and Special Snowflakes height.\nTemporary offsets are left unchanged.");
+
+                if (Plugin.TryGetLocalHeightScales(out var globalScale, out var modelScale)) {
+                    ImGui.Text($"GlobalScale: {globalScale:0.0000}    ModelScale: {modelScale:0.0000}");
+                } else {
+                    ImGui.TextDisabled("GlobalScale / ModelScale unavailable until you are logged in.");
+                }
                 if (ImGui.IsItemClicked()) {
                     Util.OpenLink("https://github.com/Caraxi/SimpleHeels/blob/master/modguide.md");
                 }

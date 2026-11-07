@@ -1,0 +1,9 @@
+{
+  "Author": "Caraxi",
+  "Name": "Simple Heels Auto Adjust",
+  "RepoUrl": "https://github.com/Caraxi/SimpleHeels",
+  "Punchline": "Adjust character position and scale heel offsets with height",
+  "Description": "Fork of Simple Heels that scales configured offsets by the character's current draw scale.",
+  "InternalName": "SimpleHeelsAutoAdjust",
+  "ApplicableVersion": "any"
+}

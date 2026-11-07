@@ -223,7 +223,7 @@ public unsafe class Plugin : IDalamudPlugin {
         }
     }
 
-    public string Name => "Simple Heels";
+    public string Name => "Simple Heels Auto Adjust";
 
     public static PluginConfig Config { get; private set; } = new();
 
@@ -593,7 +593,7 @@ public unsafe class Plugin : IDalamudPlugin {
             offset = baseOffset;
         }
 
-        var appliedOffset = offsetProvider.GetOffset();
+        var appliedOffset = ScaleOffsetWithCharacter(obj, offsetProvider, offsetProvider.GetOffset());
         offset += appliedOffset;
 
         if (Vector3.Distance(offset, obj->DrawOffset) > Constants.FloatDelta) {
@@ -608,6 +608,57 @@ public unsafe class Plugin : IDalamudPlugin {
         PitchRolls[obj->ObjectIndex] = offsetProvider.GetPitchRoll();
         
         return false;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0x2A8)]
+    private struct CharacterHeightScale {
+        [FieldOffset(0x2A0)] public float GlobalScale;
+        [FieldOffset(0x2A4)] public float ModelScale;
+    }
+
+    internal static bool TryGetHeightScales(GameObject* obj, out float globalScale, out float modelScale) {
+        globalScale = 1f;
+        modelScale = 1f;
+        if (obj == null || obj->DrawObject == null) return false;
+        if (obj->DrawObject->GetObjectType() != ObjectType.CharacterBase) return false;
+        return TryGetHeightScales(obj->DrawObject, out globalScale, out modelScale);
+    }
+
+    internal static bool TryGetLocalHeightScales(out float globalScale, out float modelScale) {
+        var player = PluginService.Objects.LocalPlayer;
+        if (player == null) {
+            globalScale = 1f;
+            modelScale = 1f;
+            return false;
+        }
+
+        return TryGetHeightScales((GameObject*)player.Address, out globalScale, out modelScale);
+    }
+
+    private static bool TryGetHeightScales(DrawObject* drawObject, out float globalScale, out float modelScale) {
+        globalScale = 1f;
+        modelScale = 1f;
+        if (drawObject == null || drawObject->GetObjectType() != ObjectType.CharacterBase) return false;
+
+        var scales = (CharacterHeightScale*)drawObject;
+        globalScale = scales->GlobalScale;
+        modelScale = scales->ModelScale;
+        return true;
+    }
+
+    private static float RacialModelScaleOrOne(DrawObject* drawObject) {
+        if (!TryGetHeightScales(drawObject, out _, out var modelScale)) return 1f;
+        if (!float.IsFinite(modelScale) || modelScale <= 0.0001f) return 1f;
+        return modelScale;
+    }
+
+    private static Vector3 ScaleOffsetWithCharacter(GameObject* obj, IOffsetProvider offsetProvider, Vector3 appliedOffset) {
+        if (!Config.ScaleOffsetsWithCharacter) return appliedOffset;
+        // Model attributes are scaled in CheckModelSlot. Temp offsets are absolute world edits.
+        if (offsetProvider is TempOffset or ModelOffsetProvider) return appliedOffset;
+        if (obj->DrawObject == null) return appliedOffset;
+
+        return appliedOffset * RacialModelScaleOrOne(obj->DrawObject);
     }
 
     private bool ObjectIsCompanionTurnedHuman(GameObject* gameObject) {
@@ -704,7 +755,7 @@ public unsafe class Plugin : IDalamudPlugin {
             offset = baseOffset;
         }
 
-        var appliedOffset = offsetProvider.GetOffset();
+        var appliedOffset = ScaleOffsetWithCharacter(obj, offsetProvider, offsetProvider.GetOffset());
         if (!AllowAdvancedPositioning()) appliedOffset = appliedOffset with { X = 0, Z = 0 };
         offset += appliedOffset;
         if (updateIndex != 0 && Config.UsePrecisePositioning && character->Mode is CharacterModes.EmoteLoop or CharacterModes.InPositionLoop && IpcAssignedData.TryGetValue(obj->EntityId, out var ipcCharacter) && ipcCharacter.EmotePosition != null && AllowAdvancedPositioning()) {
@@ -1241,15 +1292,20 @@ public unsafe class Plugin : IDalamudPlugin {
         foreach (var attr in modelResource->Attributes) {
             var str = MemoryHelper.ReadStringNullTerminated(new nint(attr.Item1.Value));
             if (str.StartsWith("heels_offset=", StringComparison.OrdinalIgnoreCase)) {
-                if (float.TryParse(str[13..].Replace(',', '.'), CultureInfo.InvariantCulture, out var offsetAttr)) return offsetAttr * human->CharacterBase.DrawObject.Object.Scale.Y;
+                if (float.TryParse(str[13..].Replace(',', '.'), CultureInfo.InvariantCulture, out var offsetAttr)) return offsetAttr * ModelAttributeScale(human);
             } else if (str.StartsWith("heels_offset_", StringComparison.OrdinalIgnoreCase)) {
                 var valueStr = str[13..].Replace("n_", "-").Replace('a', '0').Replace('b', '1').Replace('c', '2').Replace('d', '3').Replace('e', '4').Replace('f', '5').Replace('g', '6').Replace('h', '7').Replace('i', '8').Replace('j', '9').Replace('_', '.');
 
-                if (float.TryParse(valueStr, CultureInfo.InvariantCulture, out var value)) return value * human->CharacterBase.DrawObject.Object.Scale.Y;
+                if (float.TryParse(valueStr, CultureInfo.InvariantCulture, out var value)) return value * ModelAttributeScale(human);
             }
         }
 
         return null;
+    }
+
+    private static float ModelAttributeScale(Human* human) {
+        if (!Config.ScaleOffsetsWithCharacter) return human->CharacterBase.DrawObject.Object.Scale.Y;
+        return RacialModelScaleOrOne((DrawObject*)human);
     }
 
     private static float? GetOffsetFromModels(Human* human) {

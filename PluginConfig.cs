@@ -25,6 +25,7 @@ public class PluginConfig : IPluginConfiguration {
     public bool ShowCopyUi = false;
     public bool ShowPlusMinusButtons = true;
     public bool UseModelOffsets = true;
+    public bool ScaleOffsetsWithCharacter = true;
     public bool ApplyToMinions = false;
     public bool RightClickResetValue = false;
     public bool CopyAttributeButton;
