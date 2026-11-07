@@ -1,13 +1,12 @@
-Install from **ONE** of the following repos:
+Use this fork until racial height scaling is merged upstream.
+
+The copies of Simple Heels on Sea of Stars and https://repo.caraxian.com do not include this option yet. Install this fork instead:
 
 ```
-https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json
-
-or
-
-https://repo.caraxian.com
+https://github.com/Vipersden01/SimpleHeelsAutoAdjust
 ```
-The SeaOfStars repo combines many modding, customization and gposing related plugin repos into a single repo. For new users it is the better choice, but for users who already have many of the plugins installed it may be better to use my personal repo.
+
+Disable the official Simple Heels plugin while this build is loaded. Dalamud treats them as the same plugin.
 
 ## Racial height scaling
 
