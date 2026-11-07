@@ -223,7 +223,7 @@ public unsafe class Plugin : IDalamudPlugin {
         }
     }
 
-    public string Name => "Simple Heels Auto Adjust";
+    public string Name => "Simple Heels";
 
     public static PluginConfig Config { get; private set; } = new();
 
@@ -614,25 +614,6 @@ public unsafe class Plugin : IDalamudPlugin {
     private struct CharacterHeightScale {
         [FieldOffset(0x2A0)] public float GlobalScale;
         [FieldOffset(0x2A4)] public float ModelScale;
-    }
-
-    internal static bool TryGetHeightScales(GameObject* obj, out float globalScale, out float modelScale) {
-        globalScale = 1f;
-        modelScale = 1f;
-        if (obj == null || obj->DrawObject == null) return false;
-        if (obj->DrawObject->GetObjectType() != ObjectType.CharacterBase) return false;
-        return TryGetHeightScales(obj->DrawObject, out globalScale, out modelScale);
-    }
-
-    internal static bool TryGetLocalHeightScales(out float globalScale, out float modelScale) {
-        var player = PluginService.Objects.LocalPlayer;
-        if (player == null) {
-            globalScale = 1f;
-            modelScale = 1f;
-            return false;
-        }
-
-        return TryGetHeightScales((GameObject*)player.Address, out globalScale, out modelScale);
     }
 
     private static bool TryGetHeightScales(DrawObject* drawObject, out float globalScale, out float modelScale) {
