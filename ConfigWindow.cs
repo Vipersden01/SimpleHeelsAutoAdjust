@@ -704,7 +704,7 @@ public class ConfigWindow : Window {
                 }
 
                 ImGui.SameLine();
-                ImGuiComponents.HelpMarker("Multiplies configured heel, emote, and model offsets by the character's racial model height and custom draw scale.\nRacial height follows Penumbra racial scaling and Special Snowflakes height. Custom scale follows the draw object's Scale.Z, which Special Snowflakes reports as current custom scale.\nOther players receive the saved offset, not the scaled result. Their client applies the scales on the character they are drawing.\nTemporary offsets are left unchanged.");
+                ImGuiComponents.HelpMarker("Scales configured heel, emote, and default offsets by how far the current body is from the size those offsets were made for.\nRacial height follows Penumbra racial scaling and Special Snowflakes height. Custom scale follows the draw object's Scale.Z.\nOffsets made for a larger character shrink on a smaller body. Offsets made for a normal body grow on a larger one.\nModel heels_offset attributes keep normal draw-scale behavior and also follow racial height from that authoring size.\nOther players receive the saved offset and the authoring size. Their client applies the ratio using the scales it sees.\nTemporary offsets are left unchanged.");
                 
                 if (config.UseModelOffsets) {
                     ImGui.SameLine();
@@ -1164,6 +1164,25 @@ public class ConfigWindow : Window {
             }
 
             ImGuiExt.Separator();
+
+            if (characterConfig is not IpcCharacterConfig && config.ScaleOffsetsWithCharacter) {
+                ImGui.Text("Offset authoring size");
+                ImGui.SameLine();
+                ImGuiComponents.HelpMarker("The size these offsets were made for.\nThe lift is multiplied by current scale divided by this size.\nUse Set base size to current when the heels were tuned on the body on screen.\nType the larger size when the offsets came from a bigger character, so a smaller body does not float.\n0 leaves that part of the ratio at 1.");
+
+                var authoringChanged = ImGuiExt.FloatEditor("Racial height##AuthoringModelScale", ref characterConfig.BaseModelScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
+                authoringChanged |= ImGuiExt.FloatEditor("Custom scale##AuthoringCustomScale", ref characterConfig.BaseCustomScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
+                if (activeCharacter != null && ImGui.Button("Set base size to current")) {
+                    if (Plugin.TryReadLiveScales(activeCharacter, out var liveModelScale, out var liveCustomScale)) {
+                        characterConfig.BaseModelScale = liveModelScale;
+                        characterConfig.BaseCustomScale = liveCustomScale;
+                        authoringChanged = true;
+                    }
+                }
+
+                if (authoringChanged) Plugin.RequestUpdateAll();
+                ImGuiExt.Separator();
+            }
 
             if (characterConfig is not IpcCharacterConfig && ImGui.CollapsingHeader("Equipment Offsets", ImGuiTreeNodeFlags.DefaultOpen)) {
                 var activeFootwear = GetModelIdForPlayer(activeCharacter, ModelSlot.Feet);

@@ -31,6 +31,8 @@ public class IpcCharacterConfig : CharacterConfig {
             DefaultOffset = characterConfig.GetFirstMatch(player, false)?.GetOffset().Y ?? 0;
             EmoteConfigs = characterConfig?.EmoteConfigs?.Where(e => e.Enabled).Select(e => e.IpcClone()).ToList() ?? new List<EmoteConfig>();
             CustomVoiceId = characterConfig?.CustomVoiceId;
+            BaseModelScale = characterConfig?.BaseModelScale ?? 0f;
+            BaseCustomScale = characterConfig?.BaseCustomScale ?? 0f;
         }
 
         if (Plugin.Tags.TryGetValue(player.EntityId, out var tags)) {

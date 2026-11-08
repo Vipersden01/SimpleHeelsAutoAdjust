@@ -577,13 +577,14 @@ public unsafe class Plugin : IDalamudPlugin {
         
         
         IOffsetProvider? offsetProvider = null;
+        CharacterConfig? characterConfig = null;
         
         if (!IpcAssignedData.ContainsKey(obj->EntityId) && TempOffsets[updateIndex] != null) {
             offsetProvider = TempOffsets[updateIndex];
         }
         
         if (offsetProvider == null) {
-            if (!TryGetMinionCharacterConfig(obj, out var characterConfig)) return false;
+            if (!TryGetMinionCharacterConfig(obj, out characterConfig)) return false;
             if (!characterConfig.TryGetFirstMatch(obj, out offsetProvider, false)) return false;
         }
         
@@ -593,7 +594,7 @@ public unsafe class Plugin : IDalamudPlugin {
             offset = baseOffset;
         }
 
-        var appliedOffset = ScaleOffsetWithCharacter(obj, offsetProvider, offsetProvider.GetOffset());
+        var appliedOffset = ScaleOffsetWithCharacter(obj, characterConfig, offsetProvider, offsetProvider.GetOffset());
         offset += appliedOffset;
 
         if (Vector3.Distance(offset, obj->DrawOffset) > Constants.FloatDelta) {
@@ -640,13 +641,49 @@ public unsafe class Plugin : IDalamudPlugin {
         return customScale;
     }
 
-    private static Vector3 ScaleOffsetWithCharacter(GameObject* obj, IOffsetProvider offsetProvider, Vector3 appliedOffset) {
+    private static float ScaleRatio(float current, float authored) {
+        if (!float.IsFinite(authored) || authored <= 0.0001f) return 1f;
+        if (!float.IsFinite(current) || current <= 0.0001f) current = 1f;
+        return current / authored;
+    }
+
+    public static bool TryReadLiveScales(GameObject* gameObject, out float modelScale, out float customScale) {
+        modelScale = 0f;
+        customScale = 0f;
+        if (gameObject == null || gameObject->DrawObject == null) return false;
+        if (!TryGetHeightScales(gameObject->DrawObject, out _, out modelScale)) return false;
+        customScale = gameObject->DrawObject->Object.Scale.Z;
+        return float.IsFinite(modelScale) && modelScale > 0.0001f && float.IsFinite(customScale) && customScale > 0.0001f;
+    }
+
+    private static void CaptureBaseScales(CharacterConfig? characterConfig, DrawObject* drawObject) {
+        if (characterConfig is null or IpcCharacterConfig) return;
+        if (characterConfig.BaseModelScale > 0.0001f || characterConfig.BaseCustomScale > 0.0001f) return;
+        if (drawObject == null || !TryGetHeightScales(drawObject, out _, out var modelScale)) return;
+        if (!float.IsFinite(modelScale) || modelScale <= 0.0001f) return;
+        var customScale = drawObject->Object.Scale.Z;
+        if (!float.IsFinite(customScale) || customScale <= 0.0001f) return;
+
+        characterConfig.BaseModelScale = modelScale;
+        characterConfig.BaseCustomScale = customScale;
+        SaveConfig();
+    }
+
+    private static Vector3 ScaleOffsetWithCharacter(GameObject* obj, CharacterConfig? characterConfig, IOffsetProvider offsetProvider, Vector3 appliedOffset) {
         if (!Config.ScaleOffsetsWithCharacter) return appliedOffset;
-        // Temp offsets are absolute world edits. Model attributes stay raw until this multiply so sync does not send a scaled value.
+        // Temp offsets are absolute world edits. The saved offset stays raw so sync does not send the scaled result.
         if (offsetProvider is TempOffset) return appliedOffset;
         if (obj->DrawObject == null) return appliedOffset;
 
-        return appliedOffset * RacialModelScaleOrOne(obj->DrawObject) * CustomScaleOrOne(obj->DrawObject);
+        CaptureBaseScales(characterConfig, obj->DrawObject);
+        var modelRatio = ScaleRatio(RacialModelScaleOrOne(obj->DrawObject), characterConfig?.BaseModelScale ?? 0f);
+        if (offsetProvider is ModelOffsetProvider) {
+            var drawScaleY = obj->DrawObject->Object.Scale.Y;
+            if (!float.IsFinite(drawScaleY)) drawScaleY = 1f;
+            return appliedOffset * drawScaleY * modelRatio;
+        }
+
+        return appliedOffset * modelRatio * ScaleRatio(CustomScaleOrOne(obj->DrawObject), characterConfig?.BaseCustomScale ?? 0f);
     }
 
     private bool ObjectIsCompanionTurnedHuman(GameObject* gameObject) {
@@ -711,6 +748,7 @@ public unsafe class Plugin : IDalamudPlugin {
         }
 
         IOffsetProvider? offsetProvider = null;
+        CharacterConfig? characterConfig = null;
         
         if (!IpcAssignedData.ContainsKey(obj->EntityId) && TempOffsets[updateIndex] != null) {
             var emote = EmoteIdentifier.Get(character);
@@ -733,7 +771,7 @@ public unsafe class Plugin : IDalamudPlugin {
         }
         
         if (offsetProvider == null) {
-            if (!TryGetCharacterConfig(character, out var characterConfig)) return ReleaseControl(false);
+            if (!TryGetCharacterConfig(character, out characterConfig)) return ReleaseControl(false);
             if (!characterConfig.TryGetFirstMatch(character, out offsetProvider)) return ReleaseControl(false);
         }
         
@@ -743,7 +781,7 @@ public unsafe class Plugin : IDalamudPlugin {
             offset = baseOffset;
         }
 
-        var appliedOffset = ScaleOffsetWithCharacter(obj, offsetProvider, offsetProvider.GetOffset());
+        var appliedOffset = ScaleOffsetWithCharacter(obj, characterConfig, offsetProvider, offsetProvider.GetOffset());
         if (!AllowAdvancedPositioning()) appliedOffset = appliedOffset with { X = 0, Z = 0 };
         offset += appliedOffset;
         if (updateIndex != 0 && Config.UsePrecisePositioning && character->Mode is CharacterModes.EmoteLoop or CharacterModes.InPositionLoop && IpcAssignedData.TryGetValue(obj->EntityId, out var ipcCharacter) && ipcCharacter.EmotePosition != null && AllowAdvancedPositioning()) {
@@ -1292,7 +1330,7 @@ public unsafe class Plugin : IDalamudPlugin {
     }
 
     private static float ModelAttributeScale(Human* human) {
-        // While character scaling is on, CheckModelSlot returns the authored attribute. ScaleOffsetWithCharacter applies ModelScale and custom scale locally.
+        // While character scaling is on, CheckModelSlot returns the authored attribute. ScaleOffsetWithCharacter applies draw scale and the racial ratio.
         if (Config.ScaleOffsetsWithCharacter) return 1f;
         return human->CharacterBase.DrawObject.Object.Scale.Y;
     }

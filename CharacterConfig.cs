@@ -21,6 +21,13 @@ public class CharacterConfig : IOffsetProvider {
     public ushort? CustomVoiceId;
     public uint Version = 2;
 
+    // Size the offsets were made for. 0 means unset, and the apply path uses a ratio of 1.
+    public float BaseModelScale;
+    public float BaseCustomScale;
+
+    public bool ShouldSerializeBaseModelScale() => BaseModelScale > 0.0001f;
+    public bool ShouldSerializeBaseCustomScale() => BaseCustomScale > 0.0001f;
+
     public Vector3 GetOffset() {
         return new Vector3(0, DefaultOffset, 0);
     }
