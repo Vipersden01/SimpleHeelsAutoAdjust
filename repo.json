@@ -5,18 +5,16 @@
     "Punchline": "Adjust the position of your character model",
     "Description": "Adjust the position of your character model",
     "InternalName": "SimpleHeels",
-    "AssemblyVersion": "0.11.1.14",
-    "TestingAssemblyVersion": "0.11.1.16",
+    "AssemblyVersion": "0.11.1.16",
     "RepoUrl": "https://github.com/Vipersden01/SimpleHeelsAutoAdjust",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
-    "TestingDalamudApiLevel": 15,
     "DownloadLinkInstall": "https://raw.githubusercontent.com/Vipersden01/SimpleHeelsAutoAdjust/master/latest.zip",
-    "DownloadLinkTesting": "https://raw.githubusercontent.com/Vipersden01/SimpleHeelsAutoAdjust/master/testing.zip",
+    "DownloadLinkTesting": "https://raw.githubusercontent.com/Vipersden01/SimpleHeelsAutoAdjust/master/latest.zip",
     "DownloadLinkUpdate": "https://raw.githubusercontent.com/Vipersden01/SimpleHeelsAutoAdjust/master/latest.zip",
     "IsHide": false,
     "IsTestingExclusive": false,
     "DownloadCount": 0,
-    "LastUpdate": 1794153269
+    "LastUpdate": 1794159255
   }
 ]
