@@ -699,12 +699,12 @@ public class ConfigWindow : Window {
                     Util.OpenLink("https://github.com/Caraxi/SimpleHeels/blob/master/modguide.md");
                 }
 
-                if (ImGui.Checkbox("Scale offsets with racial height", ref config.ScaleOffsetsWithCharacter)) {
+                if (ImGui.Checkbox("Scale with character size", ref config.ScaleOffsetsWithCharacter)) {
                     Plugin.RequestUpdateAll();
                 }
 
                 ImGui.SameLine();
-                ImGuiComponents.HelpMarker("Scales configured heel, emote, and default offsets by how far the current body is from the size those offsets were made for.\nRacial height follows Penumbra racial scaling and Special Snowflakes height. Custom scale follows the draw object's Scale.Z.\nOffsets made for a larger character shrink on a smaller body. Offsets made for a normal body grow on a larger one.\nModel heels_offset attributes keep normal draw-scale behavior and also follow racial height from that authoring size.\nOther players receive the saved offset and the authoring size. Their client applies the ratio using the scales it sees.\nTemporary offsets are left unchanged.");
+                ImGuiComponents.HelpMarker("Matches heel offsets to height and custom scale. Other players get the height correction. Custom scale applies only when it is visible.");
                 
                 if (config.UseModelOffsets) {
                     ImGui.SameLine();
@@ -1166,13 +1166,13 @@ public class ConfigWindow : Window {
             ImGuiExt.Separator();
 
             if (characterConfig is not IpcCharacterConfig && config.ScaleOffsetsWithCharacter) {
-                ImGui.Text("Offset authoring size");
+                ImGui.Text("Made at size");
                 ImGui.SameLine();
-                ImGuiComponents.HelpMarker("The size these offsets were made for.\nThe lift is multiplied by current scale divided by this size.\nUse Set base size to current when the heels were tuned on the body on screen.\nType the larger size when the offsets came from a bigger character, so a smaller body does not float.\n0 leaves that part of the ratio at 1.");
+                ImGuiComponents.HelpMarker("Size these offsets were made for. Use current size if they were tuned on this body.");
 
                 var authoringChanged = ImGuiExt.FloatEditor("Racial height##AuthoringModelScale", ref characterConfig.BaseModelScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
                 authoringChanged |= ImGuiExt.FloatEditor("Custom scale##AuthoringCustomScale", ref characterConfig.BaseCustomScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
-                if (activeCharacter != null && ImGui.Button("Set base size to current")) {
+                if (activeCharacter != null && ImGui.Button("Use current size")) {
                     if (Plugin.TryReadLiveScales(activeCharacter, out var liveModelScale, out var liveCustomScale)) {
                         characterConfig.BaseModelScale = liveModelScale;
                         characterConfig.BaseCustomScale = liveCustomScale;

@@ -28,11 +28,17 @@ public class IpcCharacterConfig : CharacterConfig {
         if (player == null) throw new Exception("No Player");
 
         if (plugin.TryGetCharacterConfig(player, out var characterConfig, false) && characterConfig is { Enabled: true }) {
-            DefaultOffset = characterConfig.GetFirstMatch(player, false)?.GetOffset().Y ?? 0;
-            EmoteConfigs = characterConfig?.EmoteConfigs?.Where(e => e.Enabled).Select(e => e.IpcClone()).ToList() ?? new List<EmoteConfig>();
-            CustomVoiceId = characterConfig?.CustomVoiceId;
-            BaseModelScale = characterConfig?.BaseModelScale ?? 0f;
-            BaseCustomScale = characterConfig?.BaseCustomScale ?? 0f;
+            var drawObject = ((Character*)player.Address)->GameObject.DrawObject;
+            var match = characterConfig.GetFirstMatch(player, false);
+            DefaultOffset = Plugin.OffsetYForSync(match, characterConfig, drawObject, match?.GetOffset().Y ?? 0);
+            var racialRatio = Plugin.RacialSyncRatio(characterConfig, drawObject);
+            EmoteConfigs = characterConfig.EmoteConfigs?.Where(e => e.Enabled).Select(e => {
+                var clone = e.IpcClone();
+                Plugin.ScaleEmoteForSync(clone, racialRatio);
+                return clone;
+            }).ToList() ?? new List<EmoteConfig>();
+            CustomVoiceId = characterConfig.CustomVoiceId;
+            BaseCustomScale = characterConfig.BaseCustomScale;
         }
 
         if (Plugin.Tags.TryGetValue(player.EntityId, out var tags)) {

@@ -669,11 +669,36 @@ public unsafe class Plugin : IDalamudPlugin {
         SaveConfig();
     }
 
+    public static float RacialSyncRatio(CharacterConfig? characterConfig, DrawObject* drawObject) {
+        if (!Config.ScaleOffsetsWithCharacter) return 1f;
+        return ScaleRatio(RacialModelScaleOrOne(drawObject), characterConfig?.BaseModelScale ?? 0f);
+    }
+
+    public static float OffsetYForSync(IOffsetProvider? match, CharacterConfig? characterConfig, DrawObject* drawObject, float rawY) {
+        if (!Config.ScaleOffsetsWithCharacter) return rawY;
+        var ratio = RacialSyncRatio(characterConfig, drawObject);
+        if (match is not ModelOffsetProvider) return rawY * ratio;
+
+        var drawScaleY = drawObject == null ? 1f : drawObject->Object.Scale.Y;
+        if (!float.IsFinite(drawScaleY)) drawScaleY = 1f;
+        return rawY * drawScaleY * ratio;
+    }
+
+    public static void ScaleEmoteForSync(EmoteConfig emote, float racialRatio) {
+        if (!Config.ScaleOffsetsWithCharacter) return;
+        emote.Offset *= racialRatio;
+    }
+
     private static Vector3 ScaleOffsetWithCharacter(GameObject* obj, CharacterConfig? characterConfig, IOffsetProvider offsetProvider, Vector3 appliedOffset) {
         if (!Config.ScaleOffsetsWithCharacter) return appliedOffset;
-        // Temp offsets are absolute world edits. The saved offset stays raw so sync does not send the scaled result.
         if (offsetProvider is TempOffset) return appliedOffset;
         if (obj->DrawObject == null) return appliedOffset;
+
+        if (characterConfig is IpcCharacterConfig) {
+            var seenCustomScale = obj->DrawObject->Object.Scale.Z;
+            if (!float.IsFinite(seenCustomScale) || MathF.Abs(seenCustomScale - 1f) <= 0.001f) return appliedOffset;
+            return appliedOffset * ScaleRatio(seenCustomScale, characterConfig.BaseCustomScale);
+        }
 
         CaptureBaseScales(characterConfig, obj->DrawObject);
         var modelRatio = ScaleRatio(RacialModelScaleOrOne(obj->DrawObject), characterConfig?.BaseModelScale ?? 0f);
