@@ -1,11 +1,11 @@
 [
   {
-    "Author": "Caraxi",
-    "Name": "Simple Heels",
-    "Punchline": "Adjust the position of your character model",
-    "Description": "Adjust the position of your character model",
+    "Author": "Viper",
+    "Name": "Auto Adjusting Simple Heels",
+    "Punchline": "Adjust the position of your character model. Now able to auto adjust off character scale!",
+    "Description": "Adjust the position of your character model. Now able to auto adjust off character scale!\n\nCommands:\n/heels\n/heels toggle\n/heels enable\n/heels disable\n/heels temp\n/heels renamechar \"<source char name>|<source world>\" \"<target char name>|<target world>\"\n\nThis build shares its config with the official Simple Heels plugin.\nOriginally created by Caraxi.",
     "InternalName": "SimpleHeels",
-    "AssemblyVersion": "0.11.1.16",
+    "AssemblyVersion": "0.11.1.17",
     "RepoUrl": "https://github.com/Vipersden01/SimpleHeelsAutoAdjust",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
@@ -15,6 +15,6 @@
     "IsHide": false,
     "IsTestingExclusive": false,
     "DownloadCount": 0,
-    "LastUpdate": 1794159255
+    "LastUpdate": 1794351194
   }
 ]

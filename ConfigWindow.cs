@@ -704,7 +704,7 @@ public class ConfigWindow : Window {
                 }
 
                 ImGui.SameLine();
-                ImGuiComponents.HelpMarker("Matches heel offsets to height and custom scale. Other players get the height correction. Custom scale applies only when it is visible.");
+                ImGuiComponents.HelpMarker("Matches heel offsets to height and custom scale.");
                 
                 if (config.UseModelOffsets) {
                     ImGui.SameLine();
@@ -1146,7 +1146,7 @@ public class ConfigWindow : Window {
                     ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ImGuiColors.DalamudRed * new Vector4(1, 1, 1, 0.3f));
                     ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 0));
                     ImGui.Button($"Customize Plus is modifying the root node of '{activeCharacter->NameString}'", new Vector2(ImGui.GetContentRegionAvail().X, 32 * ImGuiHelpers.GlobalScale));
-                    ImGui.Button($"Simple Heels WILL NOT work for this character.", new Vector2(ImGui.GetContentRegionAvail().X, 32 * ImGuiHelpers.GlobalScale));
+                    ImGui.Button($"Auto Adjusting Simple Heels WILL NOT work for this character.", new Vector2(ImGui.GetContentRegionAvail().X, 32 * ImGuiHelpers.GlobalScale));
                     ImGui.PopStyleVar();
                     ImGui.PopStyleColor(3);
                 }
@@ -1166,13 +1166,13 @@ public class ConfigWindow : Window {
             ImGuiExt.Separator();
 
             if (characterConfig is not IpcCharacterConfig && config.ScaleOffsetsWithCharacter) {
-                ImGui.Text("Made at size");
+                ImGui.Text("Character Baseline Size");
                 ImGui.SameLine();
-                ImGuiComponents.HelpMarker("Size these offsets were made for. Use current size if they were tuned on this body.");
+                ImGuiComponents.HelpMarker("Size these offsets were made for. Hit \"Apply from current scale\" to set your base or manually put it in.");
 
-                var authoringChanged = ImGuiExt.FloatEditor("Racial height##AuthoringModelScale", ref characterConfig.BaseModelScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
-                authoringChanged |= ImGuiExt.FloatEditor("Custom scale##AuthoringCustomScale", ref characterConfig.BaseCustomScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
-                if (activeCharacter != null && ImGui.Button("Use current size")) {
+                var authoringChanged = ImGuiExt.FloatEditor("Racial height (Penumbra)##AuthoringModelScale", ref characterConfig.BaseModelScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
+                authoringChanged |= ImGuiExt.FloatEditor("Custom scale (Plugin / SizeChange)##AuthoringCustomScale", ref characterConfig.BaseCustomScale, 0.001f, 0f, 5f, customPlusMinus: 0.01f, resetValue: 0f);
+                if (activeCharacter != null && ImGui.Button("Apply From Current Scale")) {
                     if (Plugin.TryReadLiveScales(activeCharacter, out var liveModelScale, out var liveCustomScale)) {
                         characterConfig.BaseModelScale = liveModelScale;
                         characterConfig.BaseCustomScale = liveCustomScale;

@@ -30,7 +30,7 @@ public class IpcCharacterConfig : CharacterConfig {
         if (plugin.TryGetCharacterConfig(player, out var characterConfig, false) && characterConfig is { Enabled: true }) {
             var drawObject = ((Character*)player.Address)->GameObject.DrawObject;
             var match = characterConfig.GetFirstMatch(player, false);
-            DefaultOffset = Plugin.OffsetYForSync(match, characterConfig, drawObject, match?.GetOffset().Y ?? 0);
+            DefaultOffset = Plugin.OffsetYForSync(characterConfig, drawObject, match?.GetOffset().Y ?? 0);
             var racialRatio = Plugin.RacialSyncRatio(characterConfig, drawObject);
             EmoteConfigs = characterConfig.EmoteConfigs?.Where(e => e.Enabled).Select(e => {
                 var clone = e.IpcClone();

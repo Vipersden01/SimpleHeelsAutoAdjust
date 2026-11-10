@@ -151,8 +151,7 @@ public unsafe class Plugin : IDalamudPlugin {
         pluginInterface.UiBuilder.OpenConfigUi += () => OnCommand(string.Empty, string.Empty);
 
         PluginService.Commands.AddHandler("/heels", new CommandInfo(OnCommand) { 
-            HelpMessage = $"Open the {Name} config window.\n" +
-            "/heels renamechar \"<source char name>|<source world>\" \"<target char name>|<target world>\" → Rename existing character config to new character config", ShowInHelp = true 
+            HelpMessage = $"Open the {Name} config window.", ShowInHelp = true 
         });
         
         ApiProvider.Init(this);
@@ -223,7 +222,7 @@ public unsafe class Plugin : IDalamudPlugin {
         }
     }
 
-    public string Name => "Simple Heels";
+    public string Name => "Auto Adjusting Simple Heels";
 
     public static PluginConfig Config { get; private set; } = new();
 
@@ -674,14 +673,9 @@ public unsafe class Plugin : IDalamudPlugin {
         return ScaleRatio(RacialModelScaleOrOne(drawObject), characterConfig?.BaseModelScale ?? 0f);
     }
 
-    public static float OffsetYForSync(IOffsetProvider? match, CharacterConfig? characterConfig, DrawObject* drawObject, float rawY) {
+    public static float OffsetYForSync(CharacterConfig? characterConfig, DrawObject* drawObject, float rawY) {
         if (!Config.ScaleOffsetsWithCharacter) return rawY;
-        var ratio = RacialSyncRatio(characterConfig, drawObject);
-        if (match is not ModelOffsetProvider) return rawY * ratio;
-
-        var drawScaleY = drawObject == null ? 1f : drawObject->Object.Scale.Y;
-        if (!float.IsFinite(drawScaleY)) drawScaleY = 1f;
-        return rawY * drawScaleY * ratio;
+        return rawY * RacialSyncRatio(characterConfig, drawObject);
     }
 
     public static void ScaleEmoteForSync(EmoteConfig emote, float racialRatio) {
@@ -702,12 +696,6 @@ public unsafe class Plugin : IDalamudPlugin {
 
         CaptureBaseScales(characterConfig, obj->DrawObject);
         var modelRatio = ScaleRatio(RacialModelScaleOrOne(obj->DrawObject), characterConfig?.BaseModelScale ?? 0f);
-        if (offsetProvider is ModelOffsetProvider) {
-            var drawScaleY = obj->DrawObject->Object.Scale.Y;
-            if (!float.IsFinite(drawScaleY)) drawScaleY = 1f;
-            return appliedOffset * drawScaleY * modelRatio;
-        }
-
         return appliedOffset * modelRatio * ScaleRatio(CustomScaleOrOne(obj->DrawObject), characterConfig?.BaseCustomScale ?? 0f);
     }
 
@@ -1355,7 +1343,7 @@ public unsafe class Plugin : IDalamudPlugin {
     }
 
     private static float ModelAttributeScale(Human* human) {
-        // While character scaling is on, CheckModelSlot returns the authored attribute. ScaleOffsetWithCharacter applies draw scale and the racial ratio.
+        // While character scaling is on, CheckModelSlot returns the authored attribute. ScaleOffsetWithCharacter applies the same ratios as a manual entry.
         if (Config.ScaleOffsetsWithCharacter) return 1f;
         return human->CharacterBase.DrawObject.Object.Scale.Y;
     }
@@ -1429,7 +1417,7 @@ public unsafe class Plugin : IDalamudPlugin {
             PluginService.Log.Information("Saving Plugin Config");
             PluginService.PluginInterface.SavePluginConfig(Config);
         } catch (Exception ex) {
-            PluginService.ChatGui.PrintError($"Failed to save config: {ex.Message}.", "Simple Heels", 500);
+            PluginService.ChatGui.PrintError($"Failed to save config: {ex.Message}.", "Auto Adjusting Simple Heels", 500);
             PluginService.Log.Error(ex, "Failed to save config.");
         }
     }

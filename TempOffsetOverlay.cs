@@ -190,7 +190,7 @@ public sealed unsafe class TempOffsetOverlay : Window {
                 }
             }
             
-            dl.AddText(ImGui.GetWindowPos() - new Vector2(-ImGui.GetStyle().WindowPadding.X, ImGui.GetTextLineHeightWithSpacing()), ImGui.GetColorU32(ImGuiCol.Text), "Simple Heels");
+            dl.AddText(ImGui.GetWindowPos() - new Vector2(-ImGui.GetStyle().WindowPadding.X, ImGui.GetTextLineHeightWithSpacing()), ImGui.GetColorU32(ImGuiCol.Text), "Auto Adjusting Simple Heels");
         }
     }
 }
